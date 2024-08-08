@@ -19,7 +19,7 @@ router.get('/', async (req, res) => {
 
 router.get('/:id', async (req,res) => {
     try{
-        const users = await User.findOne({ _id: req.params.userId });
+        const users = await User.findOne({ _id: req.params.id });
         //it can miss
         if (!users){
             res.status(404).json("No user was found with that ID.")
@@ -74,18 +74,18 @@ router.put('/:id', async (req,res) => {
         if(req.body.username){
             if(req.body.email){
                 //both username and email
-                const user = await User.findOneAndUpdate({_id: req.params.userId }, {username : req.body.username}, {email : req.body.email}, {new : true});
+                const user = await User.findOneAndUpdate({_id: req.params.id }, {username : req.body.username}, {email : req.body.email}, {new : true});
                 res.json(user);
             }
             else{
                 //only username
-                const user = await User.findOneAndUpdate({_id: req.params.userId }, {username : req.body.username}, {new : true});
+                const user = await User.findOneAndUpdate({_id: req.params.id }, {username : req.body.username}, {new : true});
                 res.json(user);
             }
         }
         else if(req.body.email){
             //only email
-            const user = await User.findOneAndUpdate({_id: req.params.userId }, {email : req.body.email}, {new : true});
+            const user = await User.findOneAndUpdate({_id: req.params.id }, {email : req.body.email}, {new : true});
             res.json(user);
         }
         res.status(404).json("Either the user wasn't found, or the updates weren't found.");
@@ -100,7 +100,7 @@ router.put('/:id', async (req,res) => {
 router.delete('/friend', async (req, res) => {
     try{
         //test if friend exists, then try to pull from the user friends
-        const friend = await User.findOne({ _id: req.body.friendId });
+        const friend = await User.findOne({ _id: req.body.userId });
         if(!friend){ //no friend :(
             res.status(404).json('No user with the friend id found');
             return;
@@ -108,11 +108,27 @@ router.delete('/friend', async (req, res) => {
         const user = User.updateOne({_id: req.body.userId}, {"$pullAll": {
             friend: [{_id: req.body.friendId}]
         }})
+        res.json(user);
     }
     catch(err){
         res.status(500).json(err);
     }
 })
+
+//delete user
+router.delete('/:id', async (req,res) => {
+    try{
+        const user = await User.findOneAndRemove({ _id: req.params.id });
+        if(!user){
+            res.status(404).json("User not found");
+            return;
+        }
+        res.json("User deleted");
+    }
+    catch(err){
+        res.status(500).json(err);
+    }
+});
 
 
 module.exports = router;
