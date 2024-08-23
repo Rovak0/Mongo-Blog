@@ -1,6 +1,6 @@
 const router = require('express').Router();
 const User = require('../../models/user');
-
+const ObjectId = require('mongodb').ObjectId; 
 //i could do the route/controllers split, but I don't feel like managing that right now
 
 //need get routes for all/specific
@@ -10,6 +10,7 @@ const User = require('../../models/user');
 router.get('/', async (req, res) => {
     try{
         const users = await User.find(); //no parameters, find all
+        console.log(users);
         res.json(users);
     }
     catch(err){
@@ -34,7 +35,7 @@ router.get('/:id', async (req,res) => {
 //post, so create a new user
 router.post('/', async (req,res) => {
     try{
-        const newUser = await User.create(req.body); //pull data out of the req body
+        const newUser = await User.create(req.body);
         res.json(newUser);
     }
     catch (err) {
@@ -50,7 +51,7 @@ router.post('/', async (req,res) => {
 router.post('/friend', async (req, res) => {
     try{
         //there will be a userId and a friendId
-        const friend = await User.findOne({ _id: req.body.friendId });
+        const friend = await User.findById(req.body.friendId);
         if(!friend){
             res.status(404).json('No user with the friend id found');
             return;
@@ -59,7 +60,7 @@ router.post('/friend', async (req, res) => {
         res.json(user);
     }
     catch(err){
-        res.statusCode(500).json(err);
+        res.status(500).json(err);
     }
 });
 
@@ -100,14 +101,36 @@ router.put('/:id', async (req,res) => {
 router.delete('/friend', async (req, res) => {
     try{
         //test if friend exists, then try to pull from the user friends
-        const friend = await User.findOne({ _id: req.body.userId });
-        if(!friend){ //no friend :(
-            res.status(404).json('No user with the friend id found');
+        console.log("here");
+        const user = await User.findById(req.body.userId);
+        console.log("friend");
+        if(!user){ 
+            res.status(404).json('No user with the user id found');
             return;
         };
-        const user = User.updateOne({_id: req.body.userId}, {"$pullAll": {
-            friend: [{_id: req.body.friendId}]
-        }})
+        // const user = User.updateOne(
+        //     {_id: req.body.userId}, 
+        //     {"$pullAll": {"friend": }},
+        //     {new: true}
+        // )
+        //go through the user's friend array and remove any with the friend id
+        // console.log("Search");
+        // const friend = user.friend[0]
+        // console.log(friend._id);
+        // // user.friend = user.friend.filter(person => (person.getId() !== req.body.friendId));
+
+        // //save the change
+        // console.log("Save");
+        // await user.save();
+
+        await User.findByIdAndUpdate(
+            req.body.userId, 
+            {
+                $pull: {friend: _id = req.body.friendId}
+            },
+            {new: true}
+        );
+
         res.json(user);
     }
     catch(err){
@@ -118,7 +141,7 @@ router.delete('/friend', async (req, res) => {
 //delete user
 router.delete('/:id', async (req,res) => {
     try{
-        const user = await User.findOneAndRemove({ _id: req.params.id });
+        const user = await User.findByIdAndDelete(req.params.id);
         if(!user){
             res.status(404).json("User not found");
             return;

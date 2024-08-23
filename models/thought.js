@@ -7,14 +7,26 @@ const Reaction = require('./reaction');
 
 const thoughtSchema = new Schema(
     {
-        thoughtText: String,
-        userName: [
-            {
-                type: Schema.Types.ObjectId,
-                ref: 'user' //make sure it is user
-            }
-        ],
-        reaction: [Reaction]
+        thoughtText: {
+            type: String
+        },
+        owner: {
+            type: Schema.Types.ObjectId,
+            ref: 'user'
+        },
+        reaction: {
+            type: [Reaction]
+        }
+        // thoughtText: {
+        //     type: String
+        // },
+        // userName: [
+        //     {
+        //         type: Schema.Types.ObjectId,
+        //         ref: 'user' //make sure it is user
+        //     }
+        // ],
+        // reaction: [Reaction]
     },
     {
         toJSON: { //bring in virtuals
@@ -26,7 +38,7 @@ const thoughtSchema = new Schema(
 
 //TODO make sure the auto time stamp works how I think it does
 
-thoughtSchema[0].required = true; //thoughtText (index 0) is required
+// thoughtSchema[0].required = true; //thoughtText (index 0) is required
 
 thoughtSchema.virtual("reactionCount").get(function () {
     return this.reaction.length;
