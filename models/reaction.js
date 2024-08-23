@@ -4,11 +4,12 @@ const { Schema, Types } = require('mongoose');
 const reactionSchema = new Schema(
     {
         // b/c it isn't being initialized, it has to be manually given an id
+        //this seems to be false
         reactionId: {
             type: Schema.Types.ObjectId,
             default: () => new Types.ObjectId(),
           },
-          responseBody: {
+          reactionText: {
             type: String,
             required: true,
             maxlength: 280,

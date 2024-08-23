@@ -60,7 +60,11 @@ router.post('/reaction', async (req,res) => {
         //make the reaction
         //reactions aren't initialized, just fed in as a schema to the thoughts (as instructed by the assignment)
         //using find1andUpdate
-        const post = await Thought.findByIdAndUpdate(req.body.thoughtId, {"$push" : {reaction: req.body}}, {new : true});
+        // const newReaction = await 
+        const post = await Thought.findByIdAndUpdate(
+            req.body.thoughtId,
+            {"$push" : {reaction: {owner: req.body.owner, reactionText: req.body.reactionText}}}, 
+            {new : true});
         res.json(post);
     }
     catch(err){
@@ -73,17 +77,18 @@ router.post('/reaction', async (req,res) => {
 router.delete('/reaction', async (req, res) => {
     try{
         //will be given the thought and the reaction id, because the alt. is searching every thought
-        const post = await Thought.findById(req.body.thoughtId);
+        // const post = await Thought.findById(req.body.thoughtId);
+        const post = await Thought.findByIdAndUpdate(
+            req.body.thoughtId, 
+            {$pull: { reaction:{ reactionId : req.body.reactionTargetId}}},
+            { runValidators: true, new: true}
+        );
         if(!post){
             res.status(404).json('No thought with the thought id found');
             return;
         };
-        const reaction = Thought.findByIdAndUpdate(
-            req.body.thoughtId, 
-            {"$pullAll": { reaction: _id = req.body.reactionId}},
-            {new: true}
-        )
-        res.json(reaction);
+        
+        res.json(post);
     }
     catch(err){
         res.status(404).json("Something wasn't found");
