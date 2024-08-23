@@ -1,5 +1,6 @@
 const router = require('express').Router();
 const Thought = require('../../models/thought');
+const User = require('../../models/user');
 const reaction = require('../../models/reaction');
 //needs a get all, a get 1
 //a put, post delete
@@ -17,7 +18,7 @@ router.get('/', async (req, res) => {
 
 router.get('/:id', async (req,res) => {
     try{
-        const posts = await Thought.findOne({ _id: req.params.id });
+        const posts = await Thought.findById(req.params.id);
         //it can miss
         if (!posts){
             res.status(404).json("No post was found with that ID.")
@@ -32,7 +33,18 @@ router.get('/:id', async (req,res) => {
 //post thought
 router.post('/', async (req,res) => {
     try{
+        const user = await User.findById(req.body.owner);
+        if(!user){
+            return res.status(404).json({message: "User not found"});
+        }
         const newThought = await Thought.create(req.body); //pull data out of the req body
+        //need to add the thought to the user
+        await User.findByIdAndUpdate(
+            req.body.owner,
+            {
+                $push: {thought: newThought}
+            }
+        );
         res.json(newThought);
     }
     catch (err) {
@@ -48,7 +60,7 @@ router.post('/reaction', async (req,res) => {
         //make the reaction
         //reactions aren't initialized, just fed in as a schema to the thoughts (as instructed by the assignment)
         //using find1andUpdate
-        const post = await Thought.findOneAndUpdate({ _id: req.body.thoughtId }, {"$push" : {reaction: req.body}}, {new : true});
+        const post = await Thought.findByIdAndUpdate(req.body.thoughtId, {"$push" : {reaction: req.body}}, {new : true});
         res.json(post);
     }
     catch(err){
@@ -61,14 +73,16 @@ router.post('/reaction', async (req,res) => {
 router.delete('/reaction', async (req, res) => {
     try{
         //will be given the thought and the reaction id, because the alt. is searching every thought
-        const post = await Thought.findOne({ _id: req.body.thoughtId });
+        const post = await Thought.findById(req.body.thoughtId);
         if(!post){
             res.status(404).json('No thought with the thought id found');
             return;
         };
-        const reaction = Thought.updateOne({_id: req.body.thoughtId}, {"$pullAll": {
-            reaction: [{_id: req.body.reactionId}]
-        }})
+        const reaction = Thought.findByIdAndUpdate(
+            req.body.thoughtId, 
+            {"$pullAll": { reaction: _id = req.body.reactionId}},
+            {new: true}
+        )
         res.json(reaction);
     }
     catch(err){
@@ -79,11 +93,21 @@ router.delete('/reaction', async (req, res) => {
 //delete thought
 router.delete('/:id', async (req,res) => {
     try{
-        const post = await Thought.findOneAndRemove({ _id: req.params.id });
+        const post = await Thought.findByIdAndDelete(req.params.id);
         if(!post){
             res.status(404).json("Thought not found");
             return;
-        }
+        };
+        //remove it from the user
+        //the thought has a owner property
+        console.log(post.owner);
+        await User.findByIdAndUpdate(
+            post.owner, 
+            {
+                $pull: {thought: _id = req.params.id}    
+            },
+            {new: true}
+        );
         res.json("Thought deleted");
     }
     catch(err){
